@@ -1,5 +1,6 @@
 package xohoon.study.JPAquerydsl;
 
+import com.querydsl.core.QueryResults;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,6 +12,8 @@ import xohoon.study.JPAquerydsl.entity.QMember;
 import xohoon.study.JPAquerydsl.entity.Team;
 
 import javax.persistence.EntityManager;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 import static xohoon.study.JPAquerydsl.entity.QMember.member;
@@ -90,5 +93,36 @@ public class QuerydslBasicTest {
                 .fetchOne();
 
         assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
+
+    @Test
+    public void resultFetch() {
+        // list 조회
+        List<Member> fetch = queryFactory
+                .selectFrom(member)
+                .fetch();
+
+        // 단건조회
+        Member fetchOne = queryFactory
+                .selectFrom(member)
+                .fetchOne();
+
+        // 처음 한 건 조회
+        Member fetchFirst = queryFactory
+                .selectFrom(member)
+                .fetchFirst();
+
+        // 페이징 사용
+        QueryResults<Member> results = queryFactory
+                .selectFrom(member)
+                .fetchResults();
+
+        results.getTotal();
+        List<Member> content = results.getResults();
+
+        // count 쿼리로 변경
+        long total = queryFactory
+                .selectFrom(member)
+                .fetchCount();
     }
 }

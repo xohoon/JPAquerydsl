@@ -40,6 +40,7 @@ public class QuerydslBasicTest {
         Member member4 = new Member("member4", 40, teamB);
         Member member5 = new Member("member5", 50, teamB);
         Member member6 = new Member("member6", 60, teamB);
+
         em.persist(member1);
         em.persist(member2);
         em.persist(member3);
@@ -124,5 +125,62 @@ public class QuerydslBasicTest {
         long total = queryFactory
                 .selectFrom(member)
                 .fetchCount();
+    }
+
+    /*
+    * 회원 정렬 순서
+    * 1. 회원 나이 내림차순(desc)
+    * 2. 회원 이름 올림차순(asc)
+    * 단 2에서 회원 이름이 없으면 마지막에 출력*nulls last)
+    * */
+    @Test
+    public void sort() {
+        em.persist(new Member("member7", 80));
+        em.persist(new Member("member8", 80));
+        em.persist(new Member(null, 80));
+
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .where(member.age.eq(80))
+                .orderBy(member.age.desc(), member.username.asc().nullsLast())
+                .fetch();
+
+        Member member7 = result.get(0);
+        Member member8 = result.get(1);
+        Member memberNull = result.get(2);
+        assertThat(member7.getUsername()).isEqualTo("member7");
+        assertThat(member8.getUsername()).isEqualTo("member8");
+        assertThat(memberNull.getUsername()).isNull();
+    }
+
+    @Test
+    public void paging1() {
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .orderBy(member.username.desc())
+                .offset(1)
+                .limit(2)
+                .fetch();
+
+        assertThat(result.size()).isEqualTo(2);
+    }
+
+    /*
+    * count query를 최소화 할 수 있으면 count query는 분리해서 작성하는게 유리
+    * count query도 복잡하게 날아가기 때문
+    * */
+    @Test
+    public void paging2() {
+        QueryResults<Member> queryResults = queryFactory
+                .selectFrom(member)
+                .orderBy(member.username.desc())
+                .offset(1)
+                .limit(2)
+                .fetchResults();
+
+        assertThat(queryResults.getTotal()).isEqualTo(6);
+        assertThat(queryResults.getLimit()).isEqualTo(2);
+        assertThat(queryResults.getOffset()).isEqualTo(1);
+        assertThat(queryResults.getResults().size()).isEqualTo(2);
     }
 }

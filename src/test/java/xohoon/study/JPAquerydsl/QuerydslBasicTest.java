@@ -13,6 +13,7 @@ import xohoon.study.JPAquerydsl.entity.Team;
 import javax.persistence.EntityManager;
 
 import static org.assertj.core.api.Assertions.*;
+import static xohoon.study.JPAquerydsl.entity.QMember.member;
 
 @SpringBootTest
 @Transactional
@@ -20,9 +21,11 @@ public class QuerydslBasicTest {
 
     @Autowired
     EntityManager em;
+    JPAQueryFactory queryFactory;
 
     @BeforeEach
     public void before() {
+        queryFactory = new JPAQueryFactory(em);
         Team teamA = new Team("teamA");
         Team teamB = new Team("teamB");
         em.persist(teamA);
@@ -54,13 +57,36 @@ public class QuerydslBasicTest {
 
     @Test // runtime 오류 발생 x -> compile 오
     public void startQuerydsl() {
-        JPAQueryFactory queryFactory = new JPAQueryFactory(em);
-        QMember m = new QMember("m");
+//        QMember m = new QMember("m"); -> 방법1 같은 테이블을 조인할때만 사용 나머지는 왠만하면 방법3
+//        QMember m1 = QMember.member; -> 방법2
 
         Member findMember = queryFactory
-                .select(m)
-                .from(m)
-                .where(m.username.eq("member1")) // parameter binding 처리
+                .select(member) // -> 방법3(static import)
+                .from(member)
+                .where(member.username.eq("member1")) // parameter binding 처리
+                .fetchOne();
+
+        assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
+
+    @Test
+    public void search() { // and 1
+        Member findMember = queryFactory
+                .selectFrom(member)
+                .where(member.username.eq("member1").and(member.age.eq(10)))
+                .fetchOne();
+
+        assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
+
+    @Test
+    public void searchAndParam() { // and 2(선호),, 중간에 null이 들어가면 무시.. 동적쿼리에 유리
+        Member findMember = queryFactory
+                .selectFrom(member)
+                .where(
+                        member.username.eq("member1"),
+                        member.age.eq(10)
+                )
                 .fetchOne();
 
         assertThat(findMember.getUsername()).isEqualTo("member1");

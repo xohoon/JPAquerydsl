@@ -2,6 +2,8 @@ package xohoon.study.JPAquerydsl;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
@@ -11,6 +13,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
+import xohoon.study.JPAquerydsl.dto.MemberDto;
+import xohoon.study.JPAquerydsl.dto.UserDto;
 import xohoon.study.JPAquerydsl.entity.Member;
 import xohoon.study.JPAquerydsl.entity.QMember;
 import xohoon.study.JPAquerydsl.entity.QTeam;
@@ -514,5 +518,78 @@ public class QuerydslBasicTest {
             System.out.println("age = " + age);
         }
     }
+
+    @Test
+    public void findDtoByJPQL() {
+        List<MemberDto> result = em.createQuery(
+                "select new xohoon.study.JPAquerydsl.dto.MemberDto(m.username, m.age) " +
+                        "from Member m", MemberDto.class)
+                .getResultList();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    // DTO 조회
+    @Test
+    public void findDtoBySetter() {
+        List<MemberDto> result = queryFactory
+                .select(Projections.bean(MemberDto.class,
+                        member.username,
+                        member.age))
+                .from(member)
+                .fetch();
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    // DTO 조회
+    @Test
+    public void findDtoByField() { // getter setter 없이 필드에 값 바로 적용
+        List<MemberDto> result = queryFactory
+                .select(Projections.fields(MemberDto.class,
+                        member.username,
+                        member.age))
+                .from(member)
+                .fetch();
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+    @Test
+    public void findDtoByConstructor() {
+        List<MemberDto> result = queryFactory
+                .select(Projections.constructor(MemberDto.class,
+                        member.username,
+                        member.age))
+                .from(member)
+                .fetch();
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    // DTO 조회
+    @Test
+    public void findUserDto() {
+        QMember memberSub = new QMember("memberSub");
+        List<UserDto> result = queryFactory
+                .select(Projections.fields(UserDto.class,
+                        member.username.as("name"), // DTO 컬럼명이 다를때 as 활용
+                        ExpressionUtils.as(JPAExpressions
+                                .select(memberSub.age.max())
+                                .from(memberSub), "age") // sub query
+//                        member.age
+                ))
+                .from(member)
+                .fetch();
+
+        for (UserDto userDto : result) {
+            System.out.println("userDto = " + userDto);
+        }
+    }
+
 
 }

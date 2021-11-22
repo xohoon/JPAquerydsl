@@ -5,7 +5,7 @@ import xohoon.study.JPAquerydsl.entity.Member;
 
 import java.util.List;
 
-public interface MemberRepository extends JpaRepository<Member, Long> {
+public interface MemberRepository extends JpaRepository<Member, Long>, MemberRepositoryCustom{
     List<Member> findByUsername(String username);
 }
 
